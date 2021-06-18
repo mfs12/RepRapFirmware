@@ -1,6 +1,9 @@
 # Object and intermediate files
 *.o
 *.d
+tags
+cscope.out
+*.log
 
 # Misc
 /.settings/language.settings.xml
