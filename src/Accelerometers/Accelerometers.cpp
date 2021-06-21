@@ -59,6 +59,7 @@ static FileStore *CreateFile(CanAddress src, uint8_t axesToWrite, uint32_t preal
 		if (axesToWrite & 2u) { temp.cat(",Y"); }
 		if (axesToWrite & 4u) { temp.cat(",Z"); }
 		temp.cat('\n');
+		dbg("%s\n", temp.c_str());
 		f->Write(temp.c_str());
 	}
 	return f;
@@ -87,6 +88,7 @@ void Accelerometers::ProcessReceivedData(CanAddress src, const CanMessageAcceler
 		// Close any existing file
 		if (f != nullptr)
 		{
+			dbg("failed to open file\n");
 			f->Write("Data incomplete\n");
 			f->Truncate();				// truncate the file in case we didn't write all the preallocated space
 			f->Close();
@@ -104,6 +106,7 @@ void Accelerometers::ProcessReceivedData(CanAddress src, const CanMessageAcceler
 	{
 		if (msgLen < msg.GetActualDataLength())
 		{
+			dbg("received invalid data\n");
 			f->Write("Received bad data\n");
 			f->Truncate();				// truncate the file in case we didn't write all the preallocated space
 			f->Close();
@@ -111,6 +114,7 @@ void Accelerometers::ProcessReceivedData(CanAddress src, const CanMessageAcceler
 		}
 		else if (msg.axes != axesReceived || msg.firstSampleNumber != expectedSampleNumber || src != currentBoard)
 		{
+			dbg("received mismatching data\n");
 			f->Write("Received mismatched data\n");
 			f->Truncate();				// truncate the file in case we didn't write all the preallocated space
 			f->Close();
@@ -168,6 +172,7 @@ void Accelerometers::ProcessReceivedData(CanAddress src, const CanMessageAcceler
 					temp.catf(",%.*f", decimalPlaces, (double)fVal);
 				}
 
+				dbg("received %d %s\n", expectedSampleNumber, temp.c_str());
 				temp.cat('\n');
 				f->Write(temp.c_str());
 				--numSamples;
@@ -176,6 +181,7 @@ void Accelerometers::ProcessReceivedData(CanAddress src, const CanMessageAcceler
 			if (msg.lastPacket)
 			{
 				String<StringLength50> temp;
+				dbg("Rate %u, overflows %u\n", msg.actualSampleRate, numOverflows);
 				temp.printf("Rate %u, overflows %u\n", msg.actualSampleRate, numOverflows);
 				f->Write(temp.c_str());
 				f->Truncate();				// truncate the file in case we didn't write all the preallocated space
@@ -522,6 +528,7 @@ GCodeResult Accelerometers::StartAccelerometer(GCodeBuffer& gb, const StringRef&
 
 	if (running)
 	{
+		dbg("accelerometer is collecting data");
 		reply.copy("Accelerometer is already collecting data");
 		return GCodeResult::error;
 	}

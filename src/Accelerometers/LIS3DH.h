@@ -41,7 +41,7 @@ public:
 	void Int1Isr() noexcept;
 
 private:
-	enum class LisRegister : uint8_t
+	enum LisRegister : uint8_t
 	{
 		WhoAmI = 0x0f,
 		Ctrl1 = 0x20,
@@ -51,9 +51,9 @@ private:
 		FifoSource = 0x2F
 	};
 
-	bool ReadRegisters(LisRegister reg, size_t numToRead) noexcept;
+	bool ReadRegisters(uint8_t reg, size_t numToRead) noexcept;
 	bool WriteRegisters(LisRegister reg, size_t numToWrite) noexcept;
-	bool ReadRegister(LisRegister reg, uint8_t& val) noexcept;
+	bool ReadRegister(uint8_t reg, uint8_t& val) noexcept;
 	bool WriteRegister(LisRegister reg, uint8_t val) noexcept;
 
 	volatile TaskHandle taskWaiting;

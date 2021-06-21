@@ -17,17 +17,33 @@ constexpr uint32_t DataCollectionTimeout = (1000 * 32)/400 + 2;		// timeout whol
 constexpr uint8_t FifoInterruptLevel = 20;							// how full the FIFO must get before we want an interrupt
 const SpiMode lisMode = SpiMode::mode3;
 
-static constexpr uint8_t WhoAmIValue = 0x33;
+static constexpr uint8_t WhoAmIValue = 0xfe;
 
 LIS3DH::LIS3DH(SharedSpiDevice& dev, uint32_t freq, Pin p_csPin, Pin p_int1Pin) noexcept
 	: SharedSpiClient(dev, freq, lisMode, p_csPin, false), taskWaiting(nullptr), int1Pin(p_int1Pin)
 {
+	dbg("init freq %d cs %02x int %02x \n", freq, p_csPin, p_int1Pin);
 }
 
 // Do a quick test to check whether the accelerometer is present, returning true if it is
 bool LIS3DH::CheckPresent() noexcept
 {
+	bool ret;
+	enum LisRegister reg;
 	uint8_t val;
+
+	reg = LisRegister::WhoAmI;
+	ret = ReadRegister(reg, val);
+	dbg("res %d addr %02x val %02x\n", ret, reg, val);
+
+	reg = LisRegister::Status;
+	ret = ReadRegister(reg, val);
+	dbg("res %d addr %02x val %02x\n", ret, reg, val);
+
+	reg = LisRegister::FifoControl;
+	ret = ReadRegister(reg, val);
+	dbg("res %d addr %02x val %02x\n", ret, reg, val);
+
 	return ReadRegister(LisRegister::WhoAmI, val) && val == WhoAmIValue;
 }
 
@@ -176,15 +192,18 @@ void LIS3DH::StopCollecting() noexcept
 }
 
 // Read registers into dataBuffer
-bool LIS3DH::ReadRegisters(LisRegister reg, size_t numToRead) noexcept
+bool LIS3DH::ReadRegisters(uint8_t reg, size_t numToRead) noexcept
 {
 	if (!Select(Lis3dSpiTimeout))
 	{
+		dbg("lock failed\n");
 		return false;
 	}
 	transferBuffer[1] = (uint8_t)reg | 0xC0;		// set auto increment and read bits
 	const bool ret = TransceivePacket(transferBuffer + 1, transferBuffer + 1, 1 + numToRead);
 	Deselect();
+
+	dbg("reading done\n");
 	return ret;
 }
 
@@ -205,7 +224,7 @@ bool LIS3DH::WriteRegisters(LisRegister reg, size_t numToWrite) noexcept
 	return ret;
 }
 
-bool LIS3DH::ReadRegister(LisRegister reg, uint8_t& val) noexcept
+bool LIS3DH::ReadRegister(uint8_t reg, uint8_t& val) noexcept
 {
 	const bool ret = ReadRegisters(reg, 1);
 	if (ret)
